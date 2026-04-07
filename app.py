@@ -42,7 +42,7 @@ PILAR_COLORES = {
 }
 
 # Contraseña para reiniciar la votación
-CLAVE_ADMIN = "admin123"
+CLAVE_ADMIN = "MatiasL"
 
 DATA_FILE = "votos.csv"
 # ============================================================
