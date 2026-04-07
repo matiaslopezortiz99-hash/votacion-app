@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 
 const IDEAS = [
-  "Idea 1", "Idea 2", "Idea 3", "Idea 4", "Idea 5",
-  "Idea 6", "Idea 7", "Idea 8", "Idea 9", "Idea 10"
+  "Global Comercial Meeting 2026", "Communication Milestones & Events", "New campaing: From fiber to form", "Communication focus: Building our fututre tohether", "Idea 5",
+  "Presentations: Global/By market/Mill", "Autmatization through IA: DataBase; Balnace scorecard,dashboard,reports", "Fiberplace: Onboarding material", "Idea 9", "Idea 10"
 ];
 
 const COLORS = [
