@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import os
+import io
 
 # ============================================================
-# CONFIGURACIÓN - NOMBRES REALES DE LOS PROYECTOS
+# CONFIGURACIÓN
 # ============================================================
 
-# Cada idea tiene: nombre, pilar (categoría) y color
 PROYECTOS = [
     {"nombre": "Global Commercial Meeting 2026", "pilar": "Customer", "color": "#1a5632"},
     {"nombre": "Communication Milestones & Events", "pilar": "Customer", "color": "#237a45"},
@@ -33,7 +33,6 @@ OPCIONES = [p["nombre"] for p in PROYECTOS]
 PILARES = {p["nombre"]: p["pilar"] for p in PROYECTOS}
 COLORES = {p["nombre"]: p["color"] for p in PROYECTOS}
 
-# Colores por pilar para la leyenda
 PILAR_COLORES = {
     "Customer": "#1a5632",
     "Growth & Innovation": "#2563eb",
@@ -41,16 +40,13 @@ PILAR_COLORES = {
     "Sustainability": "#7c3aed",
 }
 
-# Contraseña para reiniciar la votación
-CLAVE_ADMIN = "MatiasL"
-
+CLAVE_ADMIN = "admin123"
 DATA_FILE = "votos.csv"
 # ============================================================
 
 
 st.set_page_config(page_title="CMPC - Votación de Ideas", page_icon="🌲", layout="centered")
 
-# CSS corporativo CMPC
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
@@ -128,7 +124,7 @@ st.markdown("""
         box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     }
     
-    .stButton > button {
+    .stButton > button, .stDownloadButton > button {
         font-family: 'Montserrat', sans-serif !important;
         background: linear-gradient(135deg, #1a5632 0%, #237a45 100%) !important;
         color: white !important;
@@ -141,9 +137,8 @@ st.markdown("""
         letter-spacing: 0.5px !important;
         box-shadow: 0 4px 16px rgba(26, 86, 50, 0.3) !important;
     }
-    .stButton > button:hover {
+    .stButton > button:hover, .stDownloadButton > button:hover {
         background: linear-gradient(135deg, #237a45 0%, #2a8f52 100%) !important;
-        box-shadow: 0 6px 24px rgba(26, 86, 50, 0.4) !important;
     }
     
     [data-testid="stMetric"] {
@@ -159,14 +154,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
     
-    .streamlit-expanderHeader {
-        font-family: 'Montserrat', sans-serif !important;
-        font-weight: 600 !important;
-    }
-    
-    hr {
-        border-color: rgba(26, 86, 50, 0.1) !important;
-    }
+    hr { border-color: rgba(26, 86, 50, 0.1) !important; }
     
     .cmpc-footer {
         text-align: center;
@@ -178,10 +166,7 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
     
-    /* Barras personalizadas */
-    .bar-container {
-        margin-bottom: 12px;
-    }
+    .bar-container { margin-bottom: 12px; }
     .bar-header {
         display: flex;
         justify-content: space-between;
@@ -207,7 +192,6 @@ st.markdown("""
         background: #f0f0f0;
         border-radius: 6px;
         overflow: hidden;
-        position: relative;
     }
     .bar-fill {
         height: 100%;
@@ -215,7 +199,6 @@ st.markdown("""
         display: flex;
         align-items: center;
         padding-left: 8px;
-        transition: width 0.5s ease;
         min-width: 0;
     }
     .bar-pillar {
@@ -227,8 +210,6 @@ st.markdown("""
         letter-spacing: 0.5px;
         opacity: 0.9;
     }
-    
-    /* Leyenda */
     .leyenda {
         display: flex;
         flex-wrap: wrap;
@@ -239,16 +220,8 @@ st.markdown("""
         border-radius: 12px;
         border: 1px solid rgba(26, 86, 50, 0.1);
     }
-    .leyenda-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .leyenda-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 3px;
-    }
+    .leyenda-item { display: flex; align-items: center; gap: 6px; }
+    .leyenda-dot { width: 10px; height: 10px; border-radius: 3px; }
     .leyenda-text {
         font-family: 'Montserrat', sans-serif;
         font-size: 11px;
@@ -298,7 +271,7 @@ if not df_votos.empty and len(df_votos) > 0:
 
     st.metric("Total de votos recibidos", total)
 
-    # Leyenda de colores por pilar
+    # Leyenda
     leyenda_html = '<div class="leyenda">'
     for pilar, color in PILAR_COLORES.items():
         leyenda_html += f'''
@@ -309,8 +282,7 @@ if not df_votos.empty and len(df_votos) > 0:
     leyenda_html += '</div>'
     st.markdown(leyenda_html, unsafe_allow_html=True)
 
-    # Barras personalizadas con colores por pilar
-    # Ordenar de mayor a menor votos
+    # Barras personalizadas
     sorted_ideas = sorted(OPCIONES, key=lambda x: conteo.get(x, 0), reverse=True)
     max_votos = conteo.max() if len(conteo) > 0 else 1
 
@@ -323,7 +295,6 @@ if not df_votos.empty and len(df_votos) > 0:
         bar_width = max(votos_idea / max_votos * 100, 2)
         color = COLORES.get(idea, "#1a5632")
         pilar = PILARES.get(idea, "")
-
         bars_html += f'''
         <div class="bar-container">
             <div class="bar-header">
@@ -336,19 +307,120 @@ if not df_votos.empty and len(df_votos) > 0:
                 </div>
             </div>
         </div>'''
-
     st.markdown(bars_html, unsafe_allow_html=True)
 
-    # Tabla copiable para PPT
-    with st.expander("📋 Tabla de resultados (para copiar a PPT)"):
+    st.markdown("")
+
+    # ============================================================
+    # BOTONES DE DESCARGA PARA PPT
+    # ============================================================
+    st.subheader("📥 Descargar para tu PPT")
+
+    col1, col2 = st.columns(2)
+
+    # --- BOTÓN 1: Descargar Excel ---
+    with col1:
         detalle = pd.DataFrame({
             "Proyecto": [i for i in sorted_ideas if conteo.get(i, 0) > 0],
             "Pilar": [PILARES.get(i, "") for i in sorted_ideas if conteo.get(i, 0) > 0],
             "Votos": [conteo.get(i, 0) for i in sorted_ideas if conteo.get(i, 0) > 0],
-            "Porcentaje": [f"{(conteo.get(i, 0)/total*100):.1f}%" for i in sorted_ideas if conteo.get(i, 0) > 0]
+            "Porcentaje": [round(conteo.get(i, 0)/total*100, 1) for i in sorted_ideas if conteo.get(i, 0) > 0]
         })
-        st.dataframe(detalle, use_container_width=True, hide_index=True)
-        st.caption("💡 Tip: Selecciona toda la tabla (Ctrl+A dentro de la tabla) y pégala en PowerPoint o Excel")
+        
+        # Crear Excel en memoria
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            detalle.to_excel(writer, index=False, sheet_name='Resultados')
+        excel_buffer.seek(0)
+        
+        st.download_button(
+            label="📊 Descargar Excel",
+            data=excel_buffer,
+            file_name="CMPC_Votacion_Resultados.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        st.caption("Abre el Excel y copia la tabla a tu PPT")
+
+    # --- BOTÓN 2: Descargar Gráfico como imagen PNG ---
+    with col2:
+        try:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            import matplotlib.ticker as mticker
+
+            # Datos para el gráfico (solo los que tienen votos, ordenados)
+            ideas_con_votos = [i for i in sorted_ideas if conteo.get(i, 0) > 0]
+            votos_lista = [conteo.get(i, 0) for i in ideas_con_votos]
+            colores_lista = [COLORES.get(i, "#1a5632") for i in ideas_con_votos]
+            pilares_lista = [PILARES.get(i, "") for i in ideas_con_votos]
+
+            # Acortar nombres largos para que entren
+            def acortar(texto, max_len=40):
+                if len(texto) > max_len:
+                    return texto[:max_len-3] + "..."
+                return texto
+
+            nombres_cortos = [acortar(i) for i in ideas_con_votos]
+
+            # Crear figura
+            fig, ax = plt.subplots(figsize=(12, max(6, len(ideas_con_votos) * 0.55)))
+            fig.patch.set_facecolor('#f7f9f7')
+            ax.set_facecolor('#f7f9f7')
+
+            # Barras horizontales
+            y_pos = range(len(ideas_con_votos) - 1, -1, -1)
+            bars = ax.barh(y_pos, votos_lista, color=colores_lista, height=0.65, 
+                          edgecolor='white', linewidth=0.5, zorder=3)
+            
+            ax.set_yticks(list(y_pos))
+            ax.set_yticklabels(nombres_cortos, fontsize=9, fontfamily='sans-serif', fontweight=500)
+
+            # Números al final de cada barra
+            for bar_item, votos_val in zip(bars, votos_lista):
+                pct_val = votos_val / total * 100
+                ax.text(bar_item.get_width() + max_votos * 0.02, bar_item.get_y() + bar_item.get_height()/2,
+                       f'{votos_val} ({pct_val:.0f}%)', va='center', fontsize=9, 
+                       fontweight=600, color='#333', fontfamily='sans-serif')
+
+            # Estilo
+            ax.set_xlabel('Votos', fontsize=11, fontweight=600, color='#1a5632', fontfamily='sans-serif')
+            ax.set_title(f'CMPC — Votación de Ideas de Proyecto 2026\n{total} votos totales', 
+                        fontsize=14, fontweight=700, color='#1a5632', pad=20, fontfamily='sans-serif')
+            ax.xaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+            ax.set_xlim(0, max_votos * 1.25)
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['bottom'].set_color('#ccc')
+            ax.spines['left'].set_color('#ccc')
+            ax.tick_params(colors='#666', labelsize=9)
+            ax.grid(axis='x', alpha=0.2, zorder=0)
+
+            # Leyenda de pilares
+            from matplotlib.patches import Patch
+            legend_elements = [Patch(facecolor=c, label=p) for p, c in PILAR_COLORES.items()]
+            ax.legend(handles=legend_elements, loc='lower right', fontsize=8, 
+                     framealpha=0.9, edgecolor='#ddd', fancybox=True)
+
+            plt.tight_layout()
+
+            # Guardar como PNG en memoria
+            img_buffer = io.BytesIO()
+            fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight', 
+                       facecolor='#f7f9f7', edgecolor='none')
+            img_buffer.seek(0)
+            plt.close(fig)
+
+            st.download_button(
+                label="🖼️ Descargar Gráfico PNG",
+                data=img_buffer,
+                file_name="CMPC_Votacion_Grafico.png",
+                mime="image/png"
+            )
+            st.caption("Inserta la imagen directo en tu PPT")
+
+        except Exception as e:
+            st.warning(f"Para descargar el gráfico, agrega 'matplotlib' y 'openpyxl' al requirements.txt")
 
     st.markdown("")
     if st.button("🔄 Refrescar Resultados"):
@@ -371,5 +443,4 @@ with st.expander("⚙️ Zona de Administrador"):
         else:
             st.error("❌ Contraseña incorrecta.")
 
-# Footer
 st.markdown('<div class="cmpc-footer">CMPC · Votación de Ideas de Proyecto 2026 · Escanea el QR para participar</div>', unsafe_allow_html=True)
